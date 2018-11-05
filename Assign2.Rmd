@@ -79,8 +79,10 @@ mean = sapply(rownames(Data),row_mean)
 plot(factor(rownames(Data)),mean)
 log_mean = sapply(rownames(Data),y=FALSE,row_mean)
 plot(factor(rownames(Data)),log_mean)
+gene=rownames(Data)
+library(ggplot2)
+ggplot(Data,aes(x=gene,y=mean))+geom_point()+scale_y_log10()+ggtitle("Mean expression of each gene ")
 ```
-
 
 
 
