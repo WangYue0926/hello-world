@@ -158,7 +158,9 @@ gene_drift_allele_trajectories=function(p_a=0.5,p_A=0.5,size=400,n=100,type=1,pe
 }
 gene_drift_allele_trajectories()
 ```
+
 #Q6
+
 ##Q6.1
 ###using `set.seed()` to generate same random numbers every time
 ```{r}
