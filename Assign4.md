@@ -1,0 +1,282 @@
+---
+title: "Assign4"
+author: "Yue Wang"
+date: '2018-12-02'
+output:
+  html_document:
+    keep_md: yes
+    number_sections: yes
+    toc: yes
+---
+
+
+
+#Q2
+
+```r
+diploids_selection = function(p0=0.5,W_AA=0.25,W_Aa=0.5,W_aa=0.25,n=100){
+  p=rep(NA,n)
+  w_bar=rep(NA,n)
+  p[1]=p0
+  w_bar[1]=p[1]^2*W_AA+2*p[1]*(1-p[1])*W_Aa+(1-p[1])^2*W_aa
+  for(i in 2:n){
+    p[i]=p[i-1]^2*W_AA/w_bar[i-1]+p[i-1]*(1-p[i-1])*W_Aa/w_bar[i-1]
+    w_bar[i]=p[i]^2*W_AA+2*p[i]*(1-p[i])*W_Aa+(1-p[i])^2*W_aa
+  }
+    if(any(p>0.9999)){
+    fixation = min(which.max(p>0.9999))
+    cat("fixation for A occurs approximately at generation:", fixation)
+    }else if(any((1-p)>0.9999)){
+    fixation = min(which.max((1-p)>0.9999))
+    cat("fixation for a occurs approximately at generation:", fixation)
+  }
+  else {
+    maxAlleleFreq <- max(p)
+    cat("fixation for a does not occur, max. allele frequency is", print(maxAlleleFreq,digits =2))
+  }
+  
+  return(p)
+}
+p<-diploids_selection(p0=0.055,W_AA=0.4,W_Aa=0.3,W_aa=0.2,n=40)
+```
+
+```
+## fixation for A occurs approximately at generation: 40
+```
+
+```r
+generations <- 1 :length(p)
+plot(p~generations,pch=20,
+     ylab = "allele frequency",
+     xlab = "generation")
+```
+
+![](Assign4_files/figure-html/unnamed-chunk-1-1.png)<!-- -->
+
+#Q3
+
+```r
+gene_drift=function(p_a=0.5,p_A=0.5,size=40,n=10,type=1){#type=1:"haploid"
+  freq_a=rep(NA,n)
+  freq_A=rep(NA,n)
+  freq=rep(NA,2)
+  freq_a[1]=p_a
+  freq_A[1]=p_A
+  for(i in 2:n){
+    if(freq_a[i-1]==1){
+      freq_A[(i-1):n]=rep(0,(n-i+2))
+      freq_a[i:n]=rep(1,(n-i+1))
+      break 
+    }
+    if(freq_A[i-1]==1){
+      freq_A[i:n]=rep(1,(n-i+1))
+      freq_a[(i-1):n]=rep(0,(n-i+2))
+      break 
+    }
+      freq = as.vector(table(sample(c("a","A"),size*type,replace = T,prob=c(freq_a[i-1],freq_A[i-1])))/(size*type))
+      freq_a[i] = freq[1]
+      freq_A[i] = freq[2]
+  }
+  if(any(freq_a>0.9999)){
+    fixation = min(which.max(freq_a>0.9999))
+    cat("fixation for a occurs approximately at generation:", fixation)
+  }else if(any(freq_A>0.9999)){
+    fixation = min(which.max(freq_A>0.9999))
+    cat("fixation for A occurs approximately at generation:", fixation)
+  }
+  else {
+    maxAlleleFreq <- max(freq_a)
+    cat("fixation for a does not occur, max. allele frequency is", print(maxAlleleFreq,digits =2))
+  }
+  generations <- 1 :length(freq_a)
+  plot(freq_a~generations,pch=20,type="o",col="red",ylim = c(min(min(freq_A,freq_a)),max(freq_A,freq_a)),
+       ylab = "allele frequency",
+       xlab = "generation")
+  legend("topleft",legend = c("freq_A","freq_a"),col=c("blue","red"),pch=c(17,20),cex=1,bty="n")
+  lines(freq_A~generations,pch=17,type="o",lty=2,col="blue")
+} 
+gene_drift(p_a=0.5,p_A=0.5,size=40,n=100,type=2)
+```
+
+```
+## [1] 0.56
+## fixation for a does not occur, max. allele frequency is 0.5625
+```
+
+![](Assign4_files/figure-html/unnamed-chunk-2-1.png)<!-- -->
+
+#Q4
+
+```r
+gene_drift_freq=function(p_a=1-p_A,p_A=0.1,size=50,n=100,type=1,permutation=1000){#type=1:"haploid"
+pro = 0
+  for(m in 1:permutation) {
+  freq_a=rep(NA,n)
+  freq_A=rep(NA,n)
+  freq_a[1]=p_a
+  freq_A[1]=p_A
+  for(i in 2:n){
+    if(freq_a[i-1]==1){
+      freq_A[(i-1):n]=rep(0,(n-i+2))
+      pro = pro+1
+      freq_a[i:n]=rep(1,(n-i+1))
+      break 
+    }
+    if(freq_A[i-1]==1){
+      freq_A[i:n]=rep(1,(n-i+1))
+      freq_a[(i-1):n]=rep(0,(n-i+2))
+      break 
+    }
+      freq = as.vector(table(sample(c("a","A"),size*type,replace = T, prob=c(freq_a[i-1],freq_A[i-1])))/(size*type))
+      freq_a[i] = freq[1]
+      freq_A[i] = freq[2]
+  }
+} 
+return(pro/permutation)
+}
+gene_drift_freq(p_A=0.5,size =200, type=2)
+```
+
+```
+## [1] 0.01
+```
+
+```r
+gene_drift_freq(p_A=0.25,size =200, type=2)
+```
+
+```
+## [1] 0.101
+```
+
+```r
+gene_drift_freq(p_A=0.1,size =200, type=2)
+```
+
+```
+## [1] 0.432
+```
+
+#Q5
+
+```r
+gene_drift_allele_trajectories=function(p_a=0.5,p_A=0.5,size=400,n=100,type=1,permutation = 100){#type=1:"haploid"
+  freq_a=rep(NA,n)
+  freq_A=rep(NA,n)
+  freq_a[1]=p_a
+  freq_A[1]=p_A
+  generations <- 1 :length(freq_A)
+  plot(freq_A~generations,pch=20,type="n",col="red",ylim = c(0,1),
+       ylab = "allele frequency",
+       xlab = "generation")
+  
+  for(m in 1:permutation){
+  for(i in 2:n){
+    if(freq_a[i-1]==1){
+      freq_A[(i-1):n]=rep(0,(n-i+2))
+      freq_a[i:n]=rep(1,(n-i+1))
+      break 
+    }
+    if(freq_A[i-1]==1){
+      freq_A[i:n]=rep(1,(n-i+1))
+      freq_a[(i-1):n]=rep(0,(n-i+2))
+      break 
+    }
+      freq = as.vector(table(sample(c("a","A"),size*type,replace = T, prob=c(freq_a[i-1],freq_A[i-1])))/(size*type))
+      freq_a[i] = freq[1]
+      freq_A[i] = freq[2]
+  
+  }
+  #generations <- 1 :length(freq_A)
+  lines(freq_A~generations,lty=1,col=rainbow(permutation)[m])
+} 
+}
+gene_drift_allele_trajectories()
+```
+
+![](Assign4_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+
+#Q6
+
+##Q6.1
+###using `set.seed()` to generate same random numbers every time
+
+```r
+get_p_value = function(slope=0.1,intercept = 0.5,size = 20, e = 2){
+x <- seq(from = 1, to = 10, length.out = size) # length.out is how many observations we will have a <- 0.5 
+y_deterministic <- intercept + slope*x
+y_simulated <- rnorm(length(x), mean = y_deterministic, sd = e)
+mod_sim <- lm(y_simulated ~ x)
+p_val_slope <- summary(mod_sim)$coef[2,4] # extracts the p-value p_val_slope
+return (p_val_slope)
+}
+get_p_value()
+```
+
+```
+## [1] 0.01545836
+```
+
+
+
+##Q6.2
+
+```r
+permutation = 1000
+p_array=rep(NA,permutation)
+p_array=replicate(permutation,get_p_value(slope=0.1,intercept = 0.5,size = 200, e = 2))
+hist(p_array,freq = F, main="Histogram for p", 
+     xlab="p_value")
+```
+
+![](Assign4_files/figure-html/unnamed-chunk-6-1.png)<!-- -->
+
+```r
+p_pvalue_0.05 = sum(p_array < 0.05)/permutation
+p_pvalue_0.05
+```
+
+```
+## [1] 0.465
+```
+
+##Q6.3
+###When slope equals `0`, there is no connection between `x` and `y` so the simulated pairs of (x, y) are random and the histogram shows the even distribution of p_value. p_value lower than 0.05 means `x` and `y` are significantly correlated, so the proportion of p_value lower than 0.05 should be quite small when `x` and `y` are almost not correlated.
+
+```r
+permutation = 1000
+p_array=rep(NA,permutation)
+p_array=replicate(permutation,get_p_value(slope=0))
+hist(p_array,freq = F, main="Histogram for p", 
+     xlab="p_value")
+```
+
+![](Assign4_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
+
+```r
+p_pvalue_0.05 = as.vector(table(p_array<0.05)/permutation)[2]
+p_pvalue_0.05
+```
+
+```
+## [1] 0.055
+```
+
+
+##Q6.4
+###Enlarging the sample size will increase the proportion of p_value lower than 0.05, which will help recognize the correlation between `x` and `y` even though it is very small.
+
+```r
+size_array = seq(10,100,by=5)
+permutation =100
+for(i in size_array){
+  p_array=replicate(permutation,get_p_value(slope=0.1,intercept = 0.5,e=1.5,size=i))
+  p_pvalue_0.05[i] = sum(p_array<0.05)/permutation
+}
+plot(p_pvalue_0.05[size_array]~size_array, main="Proportion", 
+     xlab="sample size",ylab="p_pvalue_0.05")
+abline(lm(p_pvalue_0.05[size_array]~size_array))
+```
+
+![](Assign4_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
+
